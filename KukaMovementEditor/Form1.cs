@@ -20,7 +20,7 @@ namespace KukaMovementEditor
         public Form1()
         {
             InitializeComponent();
-            _KR = new KukaRoboter(true);
+            _KR = new KukaRoboter();
 
             //Create the timer
             _TimerPositionUpdate = new Timer();
@@ -52,7 +52,7 @@ namespace KukaMovementEditor
         private void SetIncrementalButtonsCartesian()
         {
             //Get the movement unit 
-            string unit = "Step (mm):";
+            //string unit = "Step (mm):";
 
             //Display text for positive Cartesian movements:
             button_Xplus.Text = "+Tx";
@@ -74,7 +74,7 @@ namespace KukaMovementEditor
         private void SetIncrementalButtonsJoints()
         {
             //Get the movement unit 
-            string unit = "Step (deg):";
+            //string unit = "Step (deg):";
 
             //Display text for positive Cartesian movements:
             button_Xplus.Text = "+J1";
@@ -102,23 +102,25 @@ namespace KukaMovementEditor
         private void btn_RobotSimulation_Click(object sender, EventArgs e)
         {
             _KR.SwitchSimulationMode();
+            SPSClaw.SetOnlineMode(false);
         }
 
         private void btn_RobotRealRobot_Click(object sender, EventArgs e)
         {
             _KR.SwitchRealMode();
-            _KR.GreiferZu();
-            _KR.GreiferAuf();
+            SPSClaw.SetOnlineMode(true);
+            SPSClaw.ReceiveCommand("~ClawClose");
+            SPSClaw.ReceiveCommand("~ClawOpen");
         }
 
         private void button_GripperOpen_Click(object sender, EventArgs e)
         {
-            _KR.GreiferAuf();
+            SPSClaw.ReceiveCommand("~ClawOpen");
         }
 
         private void button_GripperClose_Click(object sender, EventArgs e)
         {
-            _KR.GreiferZu();
+            SPSClaw.ReceiveCommand("~ClawClose");
         }
 
         private void button_New_Click(object sender, EventArgs e)
@@ -148,8 +150,15 @@ namespace KukaMovementEditor
             //When there is an item selected
             if (selectedIndex != -1)
             {
-                textBox_Name.Text = listBox_NameList.Items[selectedIndex].ToString();
-                _KR.MoveToPose(listBox_PositionList.Items[selectedIndex].ToString());
+                if(listBox_PositionList.Items[selectedIndex].ToString().Contains('~'))
+                {
+                    SPSClaw.ReceiveCommand(listBox_PositionList.Items[selectedIndex].ToString());
+                }
+                else
+                {
+                    textBox_Name.Text = listBox_NameList.Items[selectedIndex].ToString();
+                    _KR.MoveToPose(listBox_PositionList.Items[selectedIndex].ToString());
+                }
             }
         }
 
@@ -176,7 +185,7 @@ namespace KukaMovementEditor
             }
 
             //Write the positions to the file
-            TextWriter tw = new StreamWriter("MovementList.txt");
+            TextWriter tw = new StreamWriter("MovementList.kmf");
 
             foreach (String s in positions)
                 tw.WriteLine(s);
@@ -192,7 +201,7 @@ namespace KukaMovementEditor
             listBox_PositionList.Items.Clear();
 
             //Add the read items
-            string[] positions = File.ReadAllLines("MovementList.txt");
+            string[] positions = File.ReadAllLines("MovementList.kmf");
             for(int i = 0; i < positions.Length; i++)
             {
                 string[] split = positions[i].Split('#');
@@ -206,7 +215,14 @@ namespace KukaMovementEditor
         {
             for(int i = 0; i < listBox_JointsList.Items.Count; i++)
             {
-                _KR.Move(listBox_JointsList.Items[i].ToString());
+                if (listBox_JointsList.Items[i].ToString().Contains('~'))
+                {
+                    SPSClaw.ReceiveCommand(listBox_JointsList.Items[i].ToString());
+                }
+                else
+                {
+                    _KR.MoveToJoints(listBox_JointsList.Items[i].ToString());
+                }
             }
         }
 
@@ -218,6 +234,32 @@ namespace KukaMovementEditor
         private void button_JointsMove_Click(object sender, EventArgs e)
         {
             _KR.Move(textBox_MoveToJoints.Text);
+        }
+
+        private void button_InsertGripperOpen_Click(object sender, EventArgs e)
+        {
+            int selectedIndex = listBox_NameList.SelectedIndex;
+
+            //When there is an item selected
+            if (selectedIndex != -1)
+            {
+                listBox_NameList.Items.Insert(selectedIndex, "Gripper Open");
+                listBox_JointsList.Items.Insert(selectedIndex, "~ClawOpen");
+                listBox_PositionList.Items.Insert(selectedIndex, "~ClawOpen");
+            }
+        }
+
+        private void button_InsertGripperClose_Click(object sender, EventArgs e)
+        {
+            int selectedIndex = listBox_NameList.SelectedIndex;
+
+            //When there is an item selected
+            if (selectedIndex != -1)
+            {
+                listBox_NameList.Items.Insert(selectedIndex, "Gripper Close");
+                listBox_JointsList.Items.Insert(selectedIndex, "~ClawClose");
+                listBox_PositionList.Items.Insert(selectedIndex, "~ClawClose");
+            }
         }
     }
 }
