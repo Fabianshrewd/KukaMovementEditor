@@ -213,15 +213,22 @@ namespace KukaMovementEditor
 
         private void button_Run_Click(object sender, EventArgs e)
         {
-            for(int i = 0; i < listBox_JointsList.Items.Count; i++)
+            //Show warning dialogue
+            WarningDialogue WD = new WarningDialogue();
+            WD.ShowDialog();
+
+            if(WD.DialogResult == DialogResult.OK)
             {
-                if (listBox_JointsList.Items[i].ToString().Contains('~'))
+                for (int i = 0; i < listBox_JointsList.Items.Count; i++)
                 {
-                    SPSClaw.ReceiveCommand(listBox_JointsList.Items[i].ToString());
-                }
-                else
-                {
-                    _KR.MoveToJoints(listBox_JointsList.Items[i].ToString());
+                    if (listBox_JointsList.Items[i].ToString().Contains('~'))
+                    {
+                        SPSClaw.ReceiveCommand(listBox_JointsList.Items[i].ToString());
+                    }
+                    else
+                    {
+                        _KR.MoveToJoints(listBox_JointsList.Items[i].ToString());
+                    }
                 }
             }
         }
